@@ -169,7 +169,7 @@ class CryptoProject:
 
         return plaintext
 
-    def generate_rsa_keys():
+    def generate_rsa_keys(keyname):
         
         # Generate private and public keys
         private_key = rsa.generate_private_key(65537, 2048)
@@ -183,7 +183,7 @@ class CryptoProject:
         )
 
         # Save private key to a file
-        with open('private_key.pem', 'wb') as f:
+        with open(keyname + '_private.pem', 'wb') as f:
             f.write(pem_private_key)
 
         # Derives the public key in PEM format
@@ -193,7 +193,7 @@ class CryptoProject:
         )
 
         # Save public key to a file
-        with open('public_key.pem', 'wb') as f:
+        with open(keyname + '_public.pem', 'wb') as f:
             f.write(pem_public_key)
 
 

@@ -1,12 +1,22 @@
 import json
 from CryptoProject import CryptoProject
 from cryptography.fernet import Fernet
+import sqlite3
 
 # Initialize CryptoProject class
 crypto = CryptoProject()
 
 # File to store user accounts
 # You can implement the backing store using a database or other methods as you like
+conn = sqlite3.connect('users.db')
+cursor = conn.cursor()
+
+cursor.execute('create table if not exists users(username, password)')
+cursor.execute('create table if not exists acl(username, access)')
+
+conn.commit()
+
+
 USER_FILE = "users.json"
 ACL_FILE = "acl.json"
 
@@ -38,6 +48,7 @@ class Authentication():
             return {}
 
     def save_users(self, users):
+        
         # TODO: Save users to persistent storage.
         return
 
