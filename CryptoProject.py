@@ -11,7 +11,7 @@ import os
 
 class CryptoProject:
     # Vigenere Cipher Encryption using the alphabet as a dicitonary
-    def vigenere_encrypt(plaintext, keyword):
+    def vigenere_encrypt(self, plaintext, keyword):
         alpha = {
         'A': 0,
         'B': 1,
@@ -64,7 +64,7 @@ class CryptoProject:
         
 
     # Vigenere Cipher Decryption
-    def vigenere_decrypt(ciphertext, keyword):
+    def vigenere_decrypt(self, ciphertext, keyword):
         alpha = {
         'A': 0,
         'B': 1,
@@ -115,7 +115,7 @@ class CryptoProject:
         return plaintext
 
         
-    def aes_encrypt(plaintext, passwd):
+    def aes_encrypt(self, plaintext, passwd):
         # Generates random salt and iv
         salt = os.urandom(16)
         iv = os.urandom(16)
@@ -142,7 +142,7 @@ class CryptoProject:
 
         return f"{salt}|{iv}|{ct}"
 
-    def aes_decrypt(ciphertext, passwd):
+    def aes_decrypt(self, ciphertext, passwd):
         # Extracts the necessary values
         salt, iv, ct = ciphertext.split('|')
 
@@ -169,7 +169,7 @@ class CryptoProject:
 
         return plaintext
 
-    def generate_rsa_keys(keyname):
+    def generate_rsa_keys(self, keyname):
         
         # Generate private and public keys
         private_key = rsa.generate_private_key(65537, 2048)
@@ -197,13 +197,11 @@ class CryptoProject:
             f.write(pem_public_key)
 
 
-    def rsa_encrypt(plaintext, public_key):
+    def rsa_encrypt(self, plaintext, public_key):
         # Load public key
-        with open(public_key, 'rb') as f:
-            pKey = serialization.load_pem_public_key(f.read())
 
         # Encrypt plaintext
-        ciphertext = pKey.encrypt(plaintext=bytes(plaintext, 'utf-8'), padding=padding.OAEP(
+        ciphertext = public_key.encrypt(plaintext=bytes(plaintext, 'utf-8'), padding=padding.OAEP(
                                         mgf=padding.MGF1(algorithm=hashes.SHA256()),
                                         algorithm=hashes.SHA256(), label=None))
         
@@ -213,7 +211,7 @@ class CryptoProject:
 
         return(ciphertext)
 
-    def rsa_decrypt(ciphertext, private_key):
+    def rsa_decrypt(self, ciphertext, private_key):
         # Load ciphertext
         with open(ciphertext, 'rb') as cipher:
             ct = cipher.read()
@@ -229,7 +227,7 @@ class CryptoProject:
         
         return (plaintext.decode())
 
-    def hash_string(input_string):
+    def hash_string(self, input_string):
         # Hashes the string
         digest = hashes.Hash(algorithm=hashes.SHA256(), backend=default_backend())
         digest.update(bytes(input_string, 'utf-8'))
@@ -237,13 +235,11 @@ class CryptoProject:
 
         return hash_bytes.hex()
 
-    def verify_integrity(input_string, expected_hash):
+    def verify_integrity(self, input_string, expected_hash):
         # Hashes the string
-        digest = hashes.Hash(algorithm=hashes.SHA256(), backend=default_backend())
-        digest.update(bytes(input_string, 'utf-8'))
-        hash_bytes = digest.finalize()
+        hash_bytes = self.hash_string(input_string)
 
         # Compare hashes
-        if hash_bytes.hex() == expected_hash:
+        if hash_bytes == expected_hash:
             return True
         return False

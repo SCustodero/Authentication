@@ -1,75 +1,90 @@
-import json
 from CryptoProject import CryptoProject
 from cryptography.fernet import Fernet
 import sqlite3
+from CryptoProject import CryptoProject as crypto
 
 # Initialize CryptoProject class
 crypto = CryptoProject()
 
 # File to store user accounts
 # You can implement the backing store using a database or other methods as you like
-conn = sqlite3.connect('users.db')
-cursor = conn.cursor()
 
-cursor.execute('create table if not exists users(username, password)')
-cursor.execute('create table if not exists acl(username, access)')
-
-conn.commit()
-
-
-USER_FILE = "users.json"
-ACL_FILE = "acl.json"
-
-
-# You must use the following two classes and their methods.  You can add methods, you can change the arguments coming into the methods, but you must use these classes and methods and do not change their names.
-
-# To use the JSON files for backend storage, you can use the following functions:
-# To write to a json file:
-# with open('filename.json', 'w') as file:
-#     json.dump(data, file)
-# To read from a json file:
-# with open('filename.json', 'r') as file:
-#     data = json.load(file)
-# See https://www.w3schools.com/python/python_json.asp for more information
-# 
-# NOTE: You need to figure out how you will use your JSON files to store user accounts and ACLs before you start coding your project.
 
 
 class Authentication():
     def __init__(self):
+        conn = sqlite3.connect('users.db')
+        cursor = conn.cursor()
+
+        cursor.execute('CREATE TABLE IF NOT EXISTS users(\
+                       username TEXT NOT NULL UNIQUE, \
+                       password TEXT NOT NULL, \
+                       private_key TEXT NOT NULL, \
+                       public_key TEXT NOT NULL)')
+        cursor.execute('CREATE TABLE IF NOT EXISTS acl(doc_name TEXT NOT NULL, username TEXT NOT NULL)')
+
+        conn.commit()
+        conn.close()
         return
     
     def load_users(self):
         """Load users from persistent storage."""
         try:
-            with open(USER_FILE, 'r') as file:
-                return json.load(file)
+            conn = sqlite3.connect('users.db')
+
+            cursor = conn.cursor()
+            cursor.execute('SELECT * FROM users')
+
+            users = cursor.fetchall()
+
+            conn.close()
+
+            return users
         except FileNotFoundError:
             return {}
 
     def save_users(self, users):
-        
-        # TODO: Save users to persistent storage.
+        # Feed in a dictionary with keys of username and values of password
+        conn = sqlite3.connect('users.db')
+        cursor = conn.cursor()
+        cursor.executemany("INSERT INTO users VALUES(:username, :password)", users)
+
+        conn.commit()
+        conn.close()
         return
 
     def create_account(self, users):
+        
         # TODO: Implement account creation
         username = input("Create a username: ")
         password = input("Create a password: ")
         # TODO: Check if username already exists
-
+        for user in users:
+            if user[0] == username:
+                print("Username already exists.")
+                return
         # TODO: Store password securely
-        
-        # TODO: Save updated user list
+        hash = crypto.hash_string(password)
 
+        private_key, public_key = crypto.generate_rsa_keys(username)
+
+        # TODO: Save updated user list
+        data = ({'username': username, 'password': hash, 'private_key': private_key, 'public_key': public_key},)
+        self.save_users(data)
         return
 
     def login(self, users):
         username = input("Enter username: ")
         password = input("Enter password: ")
         # TODO: Implement login method including secure password check
-
-        return username
+        for user in users:
+            if user[0] == username:
+                hash = user[1]
+                if crypto.verify_integrity(password, hash):
+                    print("Login successful.")
+                    return username
+        print("Invalid login credentials")
+        return False
 
 
 class AccessControl():
@@ -77,10 +92,27 @@ class AccessControl():
         return
 
     def load_acl(self):
+        conn = sqlite3.connect('users.db')
+
+        cursor = conn.cursor()
+        cursor.execute('SELECT * FROM acl')
+
+        acl = cursor.fetchall()
+
+        conn.close()
+        
+        if acl:
+            return acl
         # TODO: Load ACL (Access Control List) from persistent storage.
-        return {}
+        return []
 
     def save_acl(self, acl):
+        conn = sqlite3.connect('users.db')
+        cursor = conn.cursor()
+        cursor.executemany("INSERT INTO acl VALUES(:doc_name, :username)", acl)
+
+        conn.commit()
+        conn.close()
         #TODO: Save ACL to persistent storage.
         return
 
@@ -88,8 +120,17 @@ class AccessControl():
         filename = input("Enter the name of the file you want to create: ")
         content = input("Enter content for the file: ")
 
+        conn = sqlite3.connect('users.db')
+        cursor = conn.cursor()
+        cursor.execute('SELECT public_key FROM users WHERE username = ?', (username,))
+        conn.close()
+
+        public_key = cursor.fetchone()[0]
+
+        encrypted_content = crypto.rsa_encrypt(content, public_key)
         # TODO: Create the file and write content. EXTRA CREDIT: encrypt the file/content.
-        
+        with open(filename + '.txt', 'w') as f:
+            f.write(encrypted_content)
         # TODO: Add file access entry in ACL
         return
 
