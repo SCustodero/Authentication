@@ -208,7 +208,7 @@ class CryptoProject:
 
         return(ciphertext.hex())
 
-    def rsa_decrypt(self, ciphertext, private_key):
+    def rsa_decrypt(self, ciphertext, private_key, password):
         # Load ciphertext
         with open(ciphertext + '.txt', 'r') as cipher:
             ct = cipher.read()
@@ -216,8 +216,12 @@ class CryptoProject:
         ct = bytes.fromhex(ct)
 
         # Load private key
-        with open(private_key + '_private.pem', 'rb') as private:
-            pk = serialization.load_pem_private_key(private.read(), password=None)
+        with open(private_key + '_private.pem', 'r') as private:
+            key = private.read()
+    
+        key = self.aes_decrypt(key, password)
+        key = bytes(key, 'utf-8')
+        pk = serialization.load_pem_private_key(key, password=None)
 
         # Decrypt ciphertext
         plaintext = pk.decrypt(ct, padding=padding.OAEP(
