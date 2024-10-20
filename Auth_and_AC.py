@@ -18,12 +18,12 @@ class Authentication():
 
         cursor.execute('CREATE TABLE IF NOT EXISTS users(\
                        username TEXT NOT NULL UNIQUE, \
-                       password TEXT NOT NULL, \
-                       private_key TEXT NOT NULL, \
-                       public_key TEXT NOT NULL)')
-        cursor.execute('CREATE TABLE IF NOT EXISTS acl(doc_name TEXT NOT NULL, username TEXT NOT NULL)')
+                       password TEXT NOT NULL)')
+        
+        cursor.execute('CREATE TABLE IF NOT EXISTS acl(doc_name TEXT NOT NULL UNIQUE, username TEXT NOT NULL)')
 
         conn.commit()
+        
         conn.close()
         return
     
@@ -66,10 +66,10 @@ class Authentication():
         # TODO: Store password securely
         hash = crypto.hash_string(password)
 
-        private_key, public_key = crypto.generate_rsa_keys(username)
+        crypto.generate_rsa_keys(username)
 
         # TODO: Save updated user list
-        data = ({'username': username, 'password': hash, 'private_key': private_key, 'public_key': public_key},)
+        data = ({'username': username, 'password': hash},)
         self.save_users(data)
         return
 
@@ -109,35 +109,42 @@ class AccessControl():
     def save_acl(self, acl):
         conn = sqlite3.connect('users.db')
         cursor = conn.cursor()
-        cursor.executemany("INSERT INTO acl VALUES(:doc_name, :username)", acl)
+        cursor.executemany("INSERT INTO acl VALUES(?, ?)", (acl, ))
 
         conn.commit()
         conn.close()
         #TODO: Save ACL to persistent storage.
         return
 
-    def create_file(self, username, acl):
+    def create_file(self, username):
         filename = input("Enter the name of the file you want to create: ")
         content = input("Enter content for the file: ")
 
-        conn = sqlite3.connect('users.db')
-        cursor = conn.cursor()
-        cursor.execute('SELECT public_key FROM users WHERE username = ?', (username,))
-        conn.close()
-
-        public_key = cursor.fetchone()[0]
-
-        encrypted_content = crypto.rsa_encrypt(content, public_key)
+        encrypted_content = crypto.rsa_encrypt(content, username)
         # TODO: Create the file and write content. EXTRA CREDIT: encrypt the file/content.
         with open(filename + '.txt', 'w') as f:
             f.write(encrypted_content)
         # TODO: Add file access entry in ACL
+
+        acl = (filename, username)
+        self.save_acl(acl)
         return
 
 
 
     def read_file(self, username, acl):
         filename = input("Enter the name of the file you want to read: ")
+
+        for file in acl:
+            if file[0] == filename:
+                if file[1] == username:
+                    break
+                else:
+                    print("You do not have access to this file.")
+                    return
+
+        decrypted_content = crypto.rsa_decrypt(filename, username)
+        print(decrypted_content)
         
         # TODO: Check if the user has access. EXTRA CREDIT: If file was encrypted, decrypt the file/content
 
@@ -161,6 +168,7 @@ def main():
 
         if choice == '1':
             auth.create_account(users)
+            users = auth.load_users()
         elif choice == '2':
             user = auth.login(users)
             if user:
@@ -173,7 +181,7 @@ def main():
                     file_choice = input("Enter your choice: ")
                     
                     if file_choice == '1':
-                        ac.create_file(user, acl)
+                        ac.create_file(user)
                     elif file_choice == '2':
                         ac.read_file(user, acl)
                     elif file_choice == '3':

@@ -199,25 +199,24 @@ class CryptoProject:
 
     def rsa_encrypt(self, plaintext, public_key):
         # Load public key
-
+        with open(public_key + '_public.pem', 'rb') as f:
+            pKey = serialization.load_pem_public_key(f.read())
         # Encrypt plaintext
-        ciphertext = public_key.encrypt(plaintext=bytes(plaintext, 'utf-8'), padding=padding.OAEP(
+        ciphertext = pKey.encrypt(plaintext=bytes(plaintext, 'utf-8'), padding=padding.OAEP(
                                         mgf=padding.MGF1(algorithm=hashes.SHA256()),
                                         algorithm=hashes.SHA256(), label=None))
-        
-        # Save ciphertext to a file
-        with open('rsa_ciphertext.pem', 'wb') as cipher:
-            cipher.write(ciphertext)
 
-        return(ciphertext)
+        return(ciphertext.hex())
 
     def rsa_decrypt(self, ciphertext, private_key):
         # Load ciphertext
-        with open(ciphertext, 'rb') as cipher:
+        with open(ciphertext + '.txt', 'r') as cipher:
             ct = cipher.read()
 
+        ct = bytes.fromhex(ct)
+
         # Load private key
-        with open(private_key, 'rb') as private:
+        with open(private_key + '_private.pem', 'rb') as private:
             pk = serialization.load_pem_private_key(private.read(), password=None)
 
         # Decrypt ciphertext
