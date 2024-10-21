@@ -252,5 +252,11 @@ RSA KEYS: Keys are stored in files, and private keys are encrypted with AES usin
         none are readable exepct through the proper user login
     This prevents an attacker from gaining access to the files and directly using the content because all important
         information is encrypted, including RSA keys using AES
-
+FILE READING AND EDITING: Users can only read and edit their own files
+    This is the Principle of Least Privilege because users do not have access to files they do not own
+    This prevents an attacker or even an acctidental user from reading and editing files they shouldn't have access to
+FILE DECRYPTION: RSA keys are encrypted using AES which is automatically decrypted with the user's password when they log in
+        so that they don't have to enter the same password again or another password
+    This is the Principle of Psychological Acceptability because it makes decryption easy for the user
+    This makes the information much more available to the user while maintaining security of the data
 """
